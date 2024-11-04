@@ -18,7 +18,7 @@ lcd = CharLCD('PCF8574', 0x27, auto_linebreaks=True)
 gpiozero.Device.pin_factory = PiGPIOFactory()
 
 #Define GPIO pins
-GPIO.setup(21, GPIO.IN) #Motion Sensor Input
+GPIO.setup(16, GPIO.IN) #Motion Sensor Input
 GPIO.setup(12, GPIO.OUT) #LED Input
 button = Button(17)
 buzzer = Buzzer(26)
@@ -76,7 +76,7 @@ def display_message(timer):
 lcd.clear()
    
 def motion():
-    Motion = GPIO.input(21)
+    Motion = GPIO.input(16)
     if Motion == 0:
         GPIO.output(12,0)#LED off
         return False #Function exits with return False
@@ -87,7 +87,7 @@ def motion():
         return True #Function exits with return True
    
 # Function to simulate a timer with a timeout
-def timer(timeout=10):
+def timer(timeout):
     global id
     start_time = time()
     while time() - start_time < timeout:
@@ -118,7 +118,7 @@ def read_tag():
     #start the thread first because calling the input function blocks everything else from the program
     #This function starts the timer thread and waits for user input.
     #If the user does not provide a name, it waits for the timer thread to finish (using thread.join()) and then informs the user that no tag was entered, followed by a processing delay
-    thread1 = threading.Thread(target=timer, args=(5,))
+    thread1 = threading.Thread(target=timer, args=(13,))
     thread1.start()
    
     thread2 = threading.Thread(target = scan_tag)
@@ -153,6 +153,7 @@ def grant_access():
     sleep(7) # Give User Time to Enter
     servo.angle = 0   # Close door
     sleep(2)
+    lcd.clear()
 
 def tag_denied(attempts):
     lcd.write_string("NO ACCESS!\r\nPLEASE TRY AGAIN")
@@ -176,13 +177,14 @@ def tag_denied(attempts):
             return attempts # Exit function if max attempts reached
        
 def alert_owner():
+    lcd.clear()
     lcd.write_string("TOO MANY!\r\nATTEMPTS")
     sleep(3)
     lcd.clear()
     lcd.write_string("ALERTING OWNER")
-    for x in range(3):
-        buzzer.beep(on_time=0.5, off_time=0.5, n=1)
-        sleep(3)
+    for x in range(5):
+        buzzer.beep(on_time=0.5, off_time=0.5, n=2)
+        sleep(2)
        
    # Actions to perform after the loop completes
     stop_recording()
@@ -215,6 +217,7 @@ while True:
             if id not in AUTHORIZED_USERS:
                 attempts = tag_denied(attempts)
                 if attempts == Access_Attempts:
+                    sleep(0.5)
                     alert_owner()
                     sleep(10)
              
